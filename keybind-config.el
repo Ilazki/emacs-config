@@ -8,6 +8,17 @@
 			(local-set-key (kbd "C-;") 'comment-region)
 			))
 
+;; tuareg-mode (ocaml) keybindings
+(add-hook 'tuareg-mode-hook
+          (lambda ()
+            (local-set-key (kbd "<C-return>")   'tuareg-eval-phrase)	; Code eval. not in-line :(
+            (local-set-key (kbd "C-j")          'tuareg-eval-phrase)	; C-return for terminal
+            (local-set-key (kbd "<C-S-return>") 'tuareg-eval-buffer)	; Evaluate entire file
+			(local-set-key (kbd "<C-M-return>") 'merlin-type-enclosing)
+            (local-set-key (kbd "<M-RET>")      'auto-complete)
+            (local-set-key (kbd "C-M-J")        'auto-complete)
+            ))
+
 ;; cider-mode (clojure) keybindings
 (add-hook 'cider-mode-hook
 		  (lambda ()
@@ -53,6 +64,7 @@
 		  (lambda () 
 			(local-set-key (kbd "<C-return>")   'eval-print-last-sexp)))
 
+
 ;; dired keybinds
 (add-hook 'dired-mode-hook
 		  (lambda ()
@@ -60,8 +72,20 @@
 			(dired-omit-mode)))
 
 
+;; Add narrow-or-widen-dwim to narrowing sub map.
+;; Replaces default narrow-region binding.
+(global-set-key (kbd "C-x n n") 'narrow-or-widen-dwim)
+
 ;; easier keybind for emacs' alt-tab equivalent, C-x o
 (global-set-key (kbd "M-`")             'other-window)
+
+;; Extra tmux and screen-esque keybindings for window management.
+;; Persp-mode already uses the same prefix, so I'm just piggybacking on top of
+;; its key chording for now.
+(define-key persp-key-map (kbd "|")     'split-window-right)
+(define-key persp-key-map (kbd "-")     'split-window-below)
+(define-key persp-key-map (kbd "<tab>") 'other-window)
+(define-key persp-key-map (kbd "x")     'delete-window)
 
 ;; Keybindings to force-insert tabs
 (global-set-key (kbd "<C-tab>")         'tab-to-tab-stop) ; ctrl-tab

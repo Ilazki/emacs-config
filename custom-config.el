@@ -99,7 +99,33 @@ outside of the emacs world"
 (defalias 'helm-unicode 'helm-ucs)
 (defalias 'helm-character-select 'helm-ucs)
 
+;; All-in-one narrow/widen function shamelessly taken from
+;; http://endlessparentheses.com/emacs-narrow-or-widen-dwim.html
+(defun narrow-or-widen-dwim (p)
+  "Widen if buffer is narrowed, narrow-dwim otherwise.
+Dwim means: region, org-src-block, org-subtree, or
+defun, whichever applies first. Narrowing to
+org-src-block actually calls `org-edit-src-code'.
 
+With prefix P, don't widen, just narrow even if buffer
+is already narrowed."
+  (interactive "P")
+  (declare (interactive-only))
+  (cond ((and (buffer-narrowed-p) (not p)) (widen))
+        ((region-active-p)
+         (narrow-to-region (region-beginning)
+                           (region-end)))
+        ((derived-mode-p 'org-mode)
+         ;; `org-edit-src-code' is not a real narrowing
+         ;; command. Remove this first conditional if
+         ;; you don't want it.
+         (cond ((ignore-errors (org-edit-src-code) t)
+                (delete-other-windows))
+               ((ignore-errors (org-narrow-to-block) t))
+               (t (org-narrow-to-subtree))))
+        ((derived-mode-p 'latex-mode)
+         (LaTeX-narrow-to-environment))
+        (t (narrow-to-defun))))
 
 ;;;;;;;;;;;;;;;;;;
 ;; EXAMPLE CODE
@@ -140,6 +166,25 @@ outside of the emacs world"
 (add-hook 'lua-mode-hook (lambda()
                            (setq indent-tabs-mode nil)
                            ))
+;;;;;;;;;;;;;;;;;;;;;;;;;
+;; TUAREG-MODE (OCAML)
+;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(autoload 'merlin-mode "merlin" "Merlin mode" t)
+
+(add-hook 'tuareg-mode-hook 'paren-face-mode)
+(add-hook 'tuareg-mode-hook 'merlin-mode)
+(add-hook 'tuareg-mode-hook 'auto-complete-mode)
+;; This will hopefully toggle orgtbl back OFF.
+;; I like it in most modes, but it has issues with ocaml.
+(add-hook 'tuareg-mode-hook (lambda () (orgtbl-mode -1)))
+
+(add-hook 'caml-mode-hook   'merlin-mode)
+(add-hook 'caml-mode-hook   (lambda () (orgtbl-mode -1)))
+
+;; Alias because I tend to forget the dumb mode name.
+(defalias 'ocaml-mode 'tuareg-mode)
+
 
 
 
@@ -165,15 +210,6 @@ outside of the emacs world"
 (add-hook 'ham-mode-hook      (lambda() (buffer-face-mode t)))
 ;; Giving variable-width font in org-mode a try.
 (add-hook 'org-mode-hook      (lambda() (buffer-face-mode t)))
-
-
-
-;;;;;;;;;;;;;;;;;
-;; KEYBINDINGS
-;;;;;;;;;;;;;;;;;
-
-;; Moved to separate file due to size
-(load "~/.emacs.d/keybind-config.el")
 
 
 
@@ -385,6 +421,15 @@ outside of the emacs world"
 
 
 
+;;;;;;;;;;;;;;;;;
+;; KEYBINDINGS
+;;;;;;;;;;;;;;;;;
+
+;; Moved to separate file due to size
+(load "~/.emacs.d/keybind-config.el")
+
+
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; CUSTOM FACE SETTINGS
 ;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -417,10 +462,11 @@ outside of the emacs world"
 (add-hook 'cider-mode-hook 'ac-flyspell-workaround)
 (add-hook 'cider-mode-hook 'ac-cider-setup)
 (add-hook 'cider-repl-mode-hook 'ac-cider-setup)
+
 (eval-after-load "auto-complete"
-  '(progn
-     (add-to-list 'ac-modes 'cider-mode)
-     (add-to-list 'ac-modes 'cider-repl-mode)))
+ '(progn
+    (add-to-list 'ac-modes 'cider-mode)
+    (add-to-list 'ac-modes 'cider-repl-mode)))
 
 ;; Pixie-mode hook for REPL access via inf-clojure mode
 (add-hook 'pixie-mode-hook #'inf-clojure-minor-mode)
@@ -463,6 +509,12 @@ outside of the emacs world"
 (add-hook 'prog-mode-hook 'prettify-set)
 (global-prettify-symbols-mode t)
 
+;; Org-mode checkbox change
+(prettify-utils-add-hook org-mode 
+                         ("[ ]" "☐")
+                         ("[X]" "☑")
+                         ("[-]" "❍"))
+
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -502,11 +554,22 @@ outside of the emacs world"
 (add-hook 'prog-mode-hook 'orgtbl-mode)
 ;; Link mode bindings set in keybind-config.el
 
+;;;;;;;;;;;;;;;;;;;;;;;;
+;; POLY-MODE SETTINGS
+;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Poly modes get their own file
+(load "~/.emacs.d/polymode-config.el")
+
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; MISCELLANEOUS SETUP
 ;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Edit server for edit-with-emacs extensions
+(require 'edit-server)
+(edit-server-start)
 
 ;; Use Perl-compatible regexps in any interactive regexps
 (pcre-mode 1)
